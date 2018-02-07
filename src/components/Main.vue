@@ -56,23 +56,32 @@ export default {
           return 'C';
       }
     },
+    getValue(value) {
+      const integer = value === +value && value === (value|0);
+      //if is integer, set it to string.
+      if (integer === true) {
+        return value.toString();
+      }
+      //if is anything else, leave it like that
+      return value;
+    },
     processFile(e) {
       let _this = this;
       const rABS = true;
-      const files = e.target.files, f = files[0];
-      const fileName = f.name.substring(0, f.name.indexOf('.'));
-      const reader = new FileReader();
+      var files = e.target.files, f = files[0];
+      var fileName = f.name.substring(0, f.name.indexOf('.'));
+      var reader = new FileReader();
       let counter = 0;
       const format = 'YYYY-DD-MM h mm a';
 
       reader.onload = function(e) {
         let data = e.target.result;
         if(!rABS) data = new Uint8Array(data);
-        const workbook = XLSX.read(data, {type: rABS ? 'binary' : 'array'});
-        const sheet_name_list = workbook.SheetNames;
-        const json_data = (XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]]));
+        let workbook = XLSX.read(data, {type: rABS ? 'binary' : 'array'});
+        let sheet_name_list = workbook.SheetNames;
+        let json_data = (XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]]));
         //console.log(json_data);
-        const sheet = workbook.Sheets[sheet_name_list[0]];
+        let sheet = workbook.Sheets[sheet_name_list[0]];
         let range = XLSX.utils.decode_range(sheet['!ref']); // get the range
         let fieldDescriptors = [];
         let rows = [];
@@ -97,7 +106,7 @@ export default {
               fieldDescriptors[counter].type = _this.getType(cell)
             }
             if (header !== 1) {
-              row[fieldDescriptors[counter].name] = cell === undefined ? '': cell.v;
+              row[fieldDescriptors[counter].name] = cell === undefined ? '': _this.getValue(cell.v);
 
             }
             counter = counter + 1;
@@ -120,8 +129,6 @@ export default {
             //file is saved at this point, data is arrayBuffer with actual saved data
         });
 
-
-        /* DO SOMETHING WITH workbook HERE */
       };
       if(rABS) reader.readAsBinaryString(f); else reader.readAsArrayBuffer(f)
 
