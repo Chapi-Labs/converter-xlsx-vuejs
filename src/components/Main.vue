@@ -21,6 +21,7 @@ var DBFFile = require('dbffile');
 const save = require('save-file')
 import dbf from 'dbf';
 import moment from 'moment';
+const format = 'YYYY-DD-MM h mm a';
 
 export default {
   name: 'Main',
@@ -57,9 +58,10 @@ export default {
     },
     processFile(e) {
       let _this = this;
-      var rABS = true;
-      var files = e.target.files, f = files[0];
-      var reader = new FileReader();
+      const rABS = true;
+      const files = e.target.files, f = files[0];
+      const fileName = f.name.substring(0, f.name.indexOf('.'));
+      const reader = new FileReader();
       let counter = 0;
       const format = 'YYYY-DD-MM h mm a';
 
@@ -70,60 +72,49 @@ export default {
         const sheet_name_list = workbook.SheetNames;
         const json_data = (XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]]));
         //console.log(json_data);
-        // const sheet = workbook.Sheets[sheet_name_list[0]];
-        // var range = XLSX.utils.decode_range(sheet['!ref']); // get the range
-        // let fieldDescriptors = [];
-        // let rows = [];
-        // let header = 1;
-        // for(var R = range.s.r; R <= range.e.r; ++R) {
-        //   let row = {};
-        //   for(var C = range.s.c; C <= range.e.c; ++C) {
+        const sheet = workbook.Sheets[sheet_name_list[0]];
+        let range = XLSX.utils.decode_range(sheet['!ref']); // get the range
+        let fieldDescriptors = [];
+        let rows = [];
+        let header = 1;
+        for(let R = range.s.r; R <= range.e.r; ++R) {
+          let row = {};
+          for(let C = range.s.c; C <= range.e.c; ++C) {
 
-        //     /* find the cell object */
-        //     var cellref = XLSX.utils.encode_cell({c:C, r:R}); // construct A1 reference for cell
-        //     //if(!sheet[cellref]) continue; // if cell doesn't exist, move on
-        //     var cell = sheet[cellref];
+            /* find the cell object */
+            let cellref = XLSX.utils.encode_cell({c:C, r:R}); // construct A1 reference for cell
+            //if(!sheet[cellref]) continue; // if cell doesn't exist, move on
+            let cell = sheet[cellref];
 
-        //     if (header === 1) {
-        //       fieldDescriptors.push({
-        //         name: cell.v,
-        //         type: 'C',
-        //         size: 20
-        //       })
-        //     }
-        //     if (header === 2) {
-        //       fieldDescriptors[counter].type = _this.getType(cell)
-        //     }
-        //     if (header !== 1) {
-        //       row[fieldDescriptors[counter].name] = cell === undefined ? '': cell.v;
+            if (header === 1) {
+              fieldDescriptors.push({
+                name: cell.v,
+                type: 'C',
+                size: 20
+              })
+            }
+            if (header === 2) {
+              fieldDescriptors[counter].type = _this.getType(cell)
+            }
+            if (header !== 1) {
+              row[fieldDescriptors[counter].name] = cell === undefined ? '': cell.v;
 
-        //     }
-        //     counter = counter + 1;
-        //   }
-        //   if (header !== 1) {
-        //     rows.push(row);
-        //   }
-
-        //   header += 1;
-        //   counter = 0;
-        // }
-        // console.log(fieldDescriptors);
-        // console.log(rows);
-        // console.log(DBFFile);
-        let fixed_array = [];
-        for (let i = 0; i < json_data.length; i++) {
-          let keys = Object.keys(json_data[i]);
-          let createObj = {};
-
-          for (let j = 0; j < keys.length; j++) {
-            createObj[keys[j]] = json_data[i][keys[j]];
+            }
+            counter = counter + 1;
           }
-          fixed_array.push(createObj);
+          if (header !== 1) {
+            rows.push(row);
+          }
+
+          header += 1;
+          counter = 0;
         }
-        console.log(fixed_array);
-        var buf = dbf.structure(fixed_array);
+        // console.log(fieldDescriptors);
+        console.log(rows);
+
+        var buf = dbf.structure(rows);
         const buffer = _this.toBuffer(buf.buffer);
-        save(buffer, 'data.dbf', (err, data) => {
+        save(buffer, `${fileName} - ${moment().format(format)}.dbf`, (err, data) => {
           if (err) throw err;
 
             //file is saved at this point, data is arrayBuffer with actual saved data
